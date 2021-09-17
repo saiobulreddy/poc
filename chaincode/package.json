@@ -1,49 +1,23 @@
 {
-	"name": "upstac",
-	"version": "0.0.1",
-	"description": "Covid HRM Network",
-	"main": "index.js",
-	"engines": {
-		"node": ">=8",
-		"npm": ">=5"
-	},
+	"name": "pharma",
+	"version": "1.0.0",
+	"description": "NodeJS Application Accessing The PHARMA Chaincode on Fabric Network",
+	"main": "app.js",
 	"scripts": {
-		"lint": "eslint .",
-		"pretest": "npm run lint",
-		"test": "nyc mocha test --recursive",
-		"start-dev": "fabric-chaincode-node start --peer.address peer0.hospitalA.upstac.com:7053 --chaincode-id-name common:1.0",
-		"start": "fabric-chaincode-node start",
-		"mocha": "mocha test --recursive"
+		"test": "rm -rf identity && node app.js"
 	},
-	"engineStrict": true,
-	"author": "Jitender Bhutani",
+	"author": "Sai Reddy",
 	"dependencies": {
-		"fabric-contract-api": "~1.4.3",
-		"fabric-shim": "~1.4.3"
+		"cors": "^2.8.5",
+		"express": "^4.17.1",
+		"fabric-client": "~1.4.4",
+		"fabric-network": "~1.4.4",
+		"js-yaml": "^3.12.0",
+		"pug": "^2.0.4",
+		"rimraf": "^3.0.2",
+		"morgan": "1.9.1"
 	},
 	"devDependencies": {
-		"chai": "^4.1.2",
-		"chai-as-promised": "^7.1.1",
-		"eslint": "^4.19.1",
-		"mocha": "^5.2.0",
-		"nyc": "^12.0.2",
-		"sinon": "^6.0.0",
-		"sinon-chai": "^3.2.0"
-	},
-	"nyc": {
-		"exclude": [
-			"coverage/**",
-			"test/**"
-		],
-		"reporter": [
-			"text-summary",
-			"html"
-		],
-		"all": true,
-		"check-coverage": true,
-		"statements": 100,
-		"branches": 100,
-		"functions": 100,
-		"lines": 100
+		"eslint": "^5.6.0"
 	}
 }
