@@ -1,0 +1,381 @@
+{
+	"info": {
+		"_postman_id": "7df6cd3a-144c-4bf7-a28a-392aae2d42fd",
+		"name": "split expenses",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "dump_data_with_roomId_and_number_of_room_mates_count",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/splitter/dump_data/room1/4",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"splitter",
+						"dump_data",
+						"room1",
+						"4"
+					],
+					"query": [
+						{
+							"key": "roomId",
+							"value": "room1",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "split_paid_amount_to_all_room_meats",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\":\"roomMate3\",\r\n    \"amount\":1000\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/splitter/split_amount/room1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"splitter",
+						"split_amount",
+						"room1"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "split_paid_amount_to_all_room_meats",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"roomMate4\",\r\n    \"amount\":2500\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/splitter/split_amount/room1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"splitter",
+								"split_amount",
+								"room1"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "X-Powered-By",
+							"value": "Express"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "37"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"25-ONFVOigLWI9rc8gxgdsbrPSKayA\""
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 17 Sep 2021 15:56:14 GMT"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"message\": \"user added successfully\"\n}"
+				},
+				{
+					"name": "split_paid_amount_to_all_room_meats",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\":\"roomMate4\",\r\n    \"amount\":2500\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/splitter/split_amount/room1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"splitter",
+								"split_amount",
+								"room1"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "X-Powered-By",
+							"value": "Express"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "37"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"25-ONFVOigLWI9rc8gxgdsbrPSKayA\""
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 17 Sep 2021 15:56:14 GMT"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"message\": \"user added successfully\"\n}"
+				}
+			]
+		},
+		{
+			"name": "get_share_amount_of_your_room",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/splitter/split_amount/roomMate4",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"splitter",
+						"split_amount",
+						"roomMate4"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "get_share_amount_of_your_room",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/splitter/split_amount/roomMate4",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"splitter",
+								"split_amount",
+								"roomMate4"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "X-Powered-By",
+							"value": "Express"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "308"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"134-qWcrLDDBeYcjVz+6kUvmUWUOXQs\""
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 17 Sep 2021 15:56:46 GMT"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"data\": {\n        \"ownedAmount\": [\n            {\n                \"_id\": \"6144b9cb44e9e7603035e2ff\",\n                \"amount\": 375,\n                \"roomMate\": \"roomMate1\"\n            },\n            {\n                \"_id\": \"6144b9cb44e9e7603035e302\",\n                \"amount\": 250,\n                \"roomMate\": \"roomMate2\"\n            },\n            {\n                \"_id\": \"6144b9cb44e9e7603035e305\",\n                \"amount\": 125,\n                \"roomMate\": \"roomMate3\"\n            }\n        ],\n        \"payableAmount\": []\n    },\n    \"message\": \"Got the splitted amount of your room.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "get_all_room_mates_of_your_room",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/splitter/room_mate/room1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"splitter",
+						"room_mate",
+						"room1"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "get_all_room_mates_of_your_room",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/splitter/room_mate/room1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"splitter",
+								"room_mate",
+								"room1"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "X-Powered-By",
+							"value": "Express"
+						},
+						{
+							"key": "Content-Type",
+							"value": "application/json; charset=utf-8"
+						},
+						{
+							"key": "Content-Length",
+							"value": "354"
+						},
+						{
+							"key": "ETag",
+							"value": "W/\"162-DdQQbrM1uWsPO9K3CGc3OgD/2H8\""
+						},
+						{
+							"key": "Date",
+							"value": "Fri, 17 Sep 2021 15:58:07 GMT"
+						},
+						{
+							"key": "Connection",
+							"value": "keep-alive"
+						},
+						{
+							"key": "Keep-Alive",
+							"value": "timeout=5"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"data\": [\n        {\n            \"_id\": \"6144b9cb44e9e7603035e2f8\",\n            \"name\": \"roomMate1\",\n            \"roomId\": \"room1\",\n            \"__v\": 0\n        },\n        {\n            \"_id\": \"6144b9cb44e9e7603035e2f9\",\n            \"name\": \"roomMate2\",\n            \"roomId\": \"room1\",\n            \"__v\": 0\n        },\n        {\n            \"_id\": \"6144b9cb44e9e7603035e2fa\",\n            \"name\": \"roomMate3\",\n            \"roomId\": \"room1\",\n            \"__v\": 0\n        },\n        {\n            \"_id\": \"6144b9cb44e9e7603035e2fb\",\n            \"name\": \"roomMate4\",\n            \"roomId\": \"room1\",\n            \"__v\": 0\n        }\n    ],\n    \"message\": \"RoomMates data.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "add_room_mate_to_a_room",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\":\"roomMate1\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/splitter/room_mate/room1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"splitter",
+						"room_mate",
+						"room1"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
