@@ -4,7 +4,8 @@ services:
 
   orderer.pharma-network.com:
     container_name: orderer.pharma-network.com
-    image: hyperledger/fabric-orderer:1.4.3
+    image: hyperledger/fabric-orderer:latest
+    # image: hyperledger/fabric-orderer:2.3
     environment:
       - FABRIC_LOGGING_SPEC=INFO
       - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
