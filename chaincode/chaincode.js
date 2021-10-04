@@ -1,11 +1,33 @@
 "use strict";
 
 const { Contract } = require("fabric-contract-api");
+const contractNameSpace = "org.pharma-network.pharmanet";
 
-class ChainCode extends Contract {
+class PharmaNetContract extends Contract {
 
   constructor() {
-    super("org.pharma-network.pharmanet");
+    super(contractNameSpace);
+  }
+
+  listMSPIDS() {
+    return ["manufacturerMSP", "distributorMSP", "retailerMSP", "transporterMSP"];
+  }
+
+  listORG() {
+    return ["Manufacturer", "Distributor", "Retailer", "Transporter"];
+  }
+
+  
+  /**
+   * 
+   * @param {*} object 
+   */
+  toBuffer(object) {
+    try {
+      return Buffer.from(JSON.stringify(object));
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 
   /**
@@ -13,21 +35,54 @@ class ChainCode extends Contract {
    * @param {*} ctx 
    */
   async instantiate(ctx) {
-    console.log("Smart Contract Instantiated.");
+    let msg = "Smart Contract Instantiated.";
+    console.log(msg);
+    return msg;
   }
 
   /**
    * 
    * @param {*} ctx 
-   * @param {*} keys 
+   * @param  {...any} keys 
    */
-  async createCompositeKey(ctx, keys) {
+  async getState(ctx, ...keys) {
     try {
-      return ctx.stub.createCompositeKey("org.pharma-network.pharmanet", keys);
+      const compositeKey = await ctx.stub.createCompositeKey(contractNameSpace, keys);
+      let asset = (await ctx.stub.getState(compositeKey)).toString();
+      if (asset) asset = JSON.parse(asset);
+      return { assetId: keys.join(":"), compositeKey, asset };
     } catch (error) {
-      console.log('Cought error.');
-      throw new Error(error);
+      throw new Error(error.message || error);
     }
+  }
+
+  /**
+   * 
+   * @param {*} ctx 
+   * @param {*} Partial 
+   * @param {*} namespace 
+   */
+  async getStateByPartialCompositeKey(ctx, ...Partial) {
+    try {
+      let iterator = await ctx.stub.getStateByPartialCompositeKey(contractNameSpace, Partial);
+      let result = await iterator.next();
+
+      while (true) {
+        if (result.value && result.value.value)
+          return JSON.parse(result.value.value.toString('utf8'));
+
+        if (result.done) {
+         await iterator.close();
+          break;
+        }
+
+        result = await iterator.next();
+      }
+
+    } catch (error) {
+      throw new Error(error.message || error);
+    }
+
   }
 
   /**
@@ -40,11 +95,15 @@ class ChainCode extends Contract {
    */
   async registerCompany(ctx, companyName, companyCRN, location, organisationRole) {
     try {
+      if (!this.listORG().includes(organisationRole))
+        throw new Error('Failed to process the request where organisationRole is invalid.');
 
-      if (!["Manufacturer", "Distributor", "Retailer", "Transporter"].includes(organisationRole))
-        throw new Error('Failed to create request for this company as this company`s request already exists');
+      if (!this.listMSPIDS().includes(ctx.clientIdentity.getMSPID()))
+        throw new Error("transaction aborted");
+
       let hierarchyKey;
-      switch (hierarchyKey) {
+
+      switch (organisationRole) {
         case "Manufacturer":
           hierarchyKey = 1;
           break;
@@ -57,36 +116,26 @@ class ChainCode extends Contract {
         default:
           break;
       }
-      const companyID = this.createCompositeKey(ctx, [companyCRN, companyName]);
 
-      const existingOrg = await ctx.stub.getState(orgKey);
-      // .catch(() => console.log('Creating new org as old record isnt present'));
+      let { assetId, compositeKey, asset } = await this.getState(ctx, companyCRN, companyName);
 
-      if (existingOrg)
-        throw new Error('Failed to create request for this company as this company`s request already exists');
-
-
-      // if (ctx.clientIdentity.getMSPID() !== "registrarMSP") console.log("transaction aborted");
+      if (asset)
+        throw new Error(`Failed to process the request where this company is already registered in the system.`);
 
       let newOrgObject = {
-        companyID,
+        companyID: assetId,
         name: companyName,
         location,
         organisationRole,
         hierarchyKey,
-        companyCRN,
         createdAt: new Date(),
-        updatedAt: new Date(),
+        updatedAt: new Date()
       };
 
-      // Convert the JSON object to a buffer and send it to blockchain for storage
-      let dataBuffer = Buffer.from(JSON.stringify(newOrgObject));
-      await ctx.stub.putState(orgKey, dataBuffer);
-      // Return value of new Org account created
+      await ctx.stub.putState(compositeKey, this.toBuffer(newOrgObject));
       return newOrgObject;
     } catch (error) {
-      console.log('Cought error.');
-      throw new Error(error);
+      throw new Error(error.message || error);
     }
   }
 
@@ -101,30 +150,35 @@ class ChainCode extends Contract {
    */
   async addDrug(ctx, drugName, serialNo, mfgDate, expDate, companyCRN) {
     try {
-      if (ctx.clientIdentity.getMSPID() !== "manufacturerMSP") console.log("transaction aborted");
+      // if (ctx.clientIdentity.getMSPID() !== "manufacturerMSP")
+      //   throw new Error('Failed to process the request where organisationRole is invalid.');
 
-      const productID = this.createCompositeKey(ctx, [drugName, serialNo]);
+      const company = await this.getStateByPartialCompositeKey(ctx, companyCRN);
 
-      let newDrugObject = {
-        productID,
+      if (!company)
+        throw new Error(`Failed to process the request where company is not exist with companyCRN: ${companyCRN}.`);
+
+      const { assetId, compositeKey, asset } = await this.getState(ctx, drugName, serialNo);
+
+      if (asset)
+        throw new Error(`Failed to process the request where can't add drug with ID:${assetId} and serialNo: ${serialNo}.`);
+
+      const newDrugObject = {
+        productID: assetId,
         name: drugName,
-        manufacturer: ctx.clientIdentity.getID,
+        manufacturer: company.companyID,
         manufacturingDate: mfgDate,
         expiryDate: expDate,
-        owner: ctx.clientIdentity.getID,
+        owner: company.companyID,
         shipment: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      // Convert the JSON object to a buffer and send it to blockchain for storage
-      let dataBuffer = Buffer.from(JSON.stringify(newDrugObject));
-      await ctx.stub.putState(productID, dataBuffer);
-      // Return value of new user account created
+      await ctx.stub.putState(compositeKey, this.toBuffer(newDrugObject));
       return newDrugObject;
     } catch (error) {
-      console.log('Cought error.');
-      throw new Error(error);
+      throw new Error(error.message || error);
     }
   }
 
@@ -138,35 +192,41 @@ class ChainCode extends Contract {
    */
   async createPO(ctx, buyerCRN, sellerCRN, drugName, quantity) {
     try {
-      // if (ctx.clientIdentity.getMSPID() == "manufacturerMSP") console.log("transaction aborted");
+      // if (["distributorMSP", "retailerMSP"].includes(ctx.clientIdentity.getMSPID()))
+      //   throw new Error('Failed to process the request where organisation is invalid.');
 
-      // Create the composite key required to fetch record from blockchain
-      const poID = this.createCompositeKey(ctx, [buyerCRN, drugName]);
-      const existingPo = await ctx.stub.getState(poID)
-        .catch(() => console.log('Creating new Po as old record isnt present'));
+      const buyer = await this.getStateByPartialCompositeKey(ctx, buyerCRN);
 
-      if (existingPo)
-        throw new Error('Failed to create request for this po as this po`s request already exist');
+      if (!buyer)
+        throw new Error(`Failed to process the request where buyer is not exist with buyerCRN: ${buyerCRN}.`);
 
-      let newpoObject = {
-        poID,
+      const seller = await this.getStateByPartialCompositeKey(ctx, sellerCRN);
+
+      if (!seller)
+        throw new Error(`Failed to process the request where buyer is not exist with buyerCRN: ${sellerCRN}.`);
+
+      if (buyer.hierarchyKey < seller.hierarchyKey)
+        throw new Error('Failed to process the request where selling drug to the buyer is not valid.');
+
+      const { assetId, compositeKey, asset } = await this.getState(ctx, "PO", buyerCRN, drugName);
+
+      if (asset)
+        throw new Error("Failed to process request where PO can't be duplicate.");
+
+      const newpoObject = {
+        poID: assetId,
         drugName,
         quantity,
-        buyer: ctx.clientIdentity.getID(),
-        seller: sellerCRN, // need to replace with the seller composit key
-        status,
+        buyer: buyer.companyID,
+        seller: seller.companyID,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      // Convert the JSON object to a buffer and send it to blockchain for storage
-      let dataBuffer = Buffer.from(JSON.stringify(newpoObject));
-      await ctx.stub.putState(poKey, dataBuffer);
-      // Return value of new user account created
+      await ctx.stub.putState(compositeKey, this.toBuffer(newpoObject));
       return newpoObject;
     } catch (error) {
-      console.log('Cought error.');
-      throw new Error(error);
+      throw new Error(error.message || error);
     }
   }
 
@@ -180,33 +240,65 @@ class ChainCode extends Contract {
    */
   async createShipment(ctx, buyerCRN, drugName, listOfAssets, transporterCRN) {
     try {
-      // Create the composite key required to fetch record from blockchain
-      const shipmentID = this.createCompositeKey(ctx, [buyerCRN, drugName]);
+      // if (!["distributorMSP", "manufacturerMSP"].includes(ctx.clientIdentity.getMSPID()))
+      //   throw new Error('Failed to process the request where organisation is invalid.');
 
-      // Get Purchase Order Request object from blockchain 
-      // let reqObj = await ctx.stub.getState(requestKey).catch((err) => console.log(err));
+      // if (buyerData.hierarchyKey < seller.hierarchyKey)
+      // throw new Error('Failed to process the request where selling drug to the buyer is not valid.');
 
-      let newShipmentObject = {
-        shipmentID,
-        creator: ctx.clientIdentity.getID(),
-        assets: [],
-        transporter: "", // composit key of transporter
+      const transporter = await this.getStateByPartialCompositeKey(ctx, transporterCRN);
+
+      if (!transporter)
+        throw new Error('Failed to process request where transporter is not valid/exist.');
+
+      const poData = await this.getStateByPartialCompositeKey(ctx, "PO", buyerCRN, drugName);
+
+      if (!poData)
+        throw new Error('Failed to process request where PO is not valid/exist.');
+
+      const { assetId, compositeKey, asset } = await this.getState(ctx, "shipment", buyerCRN, drugName);
+
+      if (asset)
+        throw new Error('Failed to process request where the shipment is alredy created.');
+
+      const drug = await this.getStateByPartialCompositeKey(ctx, drugName);
+
+      if (!drug)
+        throw new Error('Failed to process request where drug is not valid/exist.');
+
+      const creator = drug.owner;
+
+      const assets = listOfAssets.split(",");
+
+      for (const drugID of assets) {
+        const { compositeKey, asset } = await this.getState(ctx, ...drugID.split(":"));
+
+        if (!asset)
+          throw new Error(`Failed to process request where drug with ID:${compositeKey} is not valid/exist.`);
+
+        if (creator != asset.owner)
+          throw new Error(`Failed to process request where drug owner ${creator} mismatched with ${asset.owner}.`);
+
+        asset.shipment.push(assetId);
+        asset.owner = transporter.companyID;
+        asset.updatedAt = new Date();
+        await ctx.stub.putState(compositeKey, this.toBuffer(asset));
+      }
+
+      const newShipmentObject = {
+        shipmentID: assetId,
+        creator,
+        assets,
+        transporter: transporter.companyID,
         status: "in-transit",
         createdAt: new Date(),
         updatedAt: new Date(),
-        owner: "" // composit key of transporter
       };
 
-      const shipmentKey = ctx.stub.createCompositeKey("org.property-registration-network.userRegnet.user", [name, aadhar]);
-
-      // Convert the JSON object to a buffer and send it to blockchain for storage
-      let dataBuffer = Buffer.from(JSON.stringify(newShipmentObject));
-      await ctx.stub.putState(shipmentKey, dataBuffer);
-      // Return value of new user account created
+      await ctx.stub.putState(compositeKey, this.toBuffer(newShipmentObject));
       return newShipmentObject;
     } catch (error) {
-      console.log('Cought error.');
-      throw new Error(error);
+      throw new Error(error.message || error);
     }
   }
 
@@ -219,30 +311,47 @@ class ChainCode extends Contract {
    */
   async updateShipment(ctx, buyerCRN, drugName, transporterCRN) {
     try {
-      if (ctx.clientIdentity.getMSPID() !== "transporterMSP") console.log("transaction aborted");
-      // Create the composite key required to fetch record from blockchain
-      const shipmentID = this.createCompositeKey(ctx, [buyerCRN, drugName]);
+      // if (ctx.clientIdentity.getMSPID() !== "transporterMSP")
+      //   throw new Error('Failed to process request where the request made is not a transporter.');
 
-      // Return request object from blockchain
-      let shipmentObject = await ctx.stub.getState(shipmentID).catch((err) => console.log(err));
-      for (const drugID in shipmentObject.assets) {
-        let dregObject = await ctx.stub.getState(drugID).catch((err) => console.log(err));
-        dreg.shipment.push(shipmentID);
-        let dataBuffer = Buffer.from(JSON.stringify(dregObject));
-        await ctx.stub.putState(drugID, dataBuffer);
-      };
+      const transporter = await this.getStateByPartialCompositeKey(ctx, transporterCRN);
 
-      shipmentObject.status = "delivered";
-      shipmentObject.owner = shipmentID;
+      if (!transporter)
+        throw new Error('Failed to process request where transporter is not valid/exist.');
 
-      // Convert the JSON object to a buffer and send it to blockchain for storage
-      let dataBuffer = Buffer.from(JSON.stringify(shipmentObject));
-      await ctx.stub.putState(shipmentID, dataBuffer);
-      // Return value of new user account created
-      return shipmentObject;
+      const buyer = await this.getStateByPartialCompositeKey(ctx, buyerCRN);
+
+      if (!buyer)
+        throw new Error('Failed to process request where buyer is not valid/exist.');
+
+      const { compositeKey, asset } = await this.getState(ctx, "shipment", buyerCRN, drugName);
+
+      if (!asset)
+        throw new Error('Failed to process request where shipment is not valid/exist.');
+
+      const shipment = asset;
+
+      if (!shipment.assets || !shipment.assets.length)
+        throw new Error('Failed to process request where drugs are missing in the shipment.');
+
+      for (const drugID of shipment.assets) {
+        const { compositeKey, asset } = await this.getState(ctx, ...drugID.split(":"));
+
+        if (!asset)
+          throw new Error('Failed to process request where shipment asset is missing.');
+
+        asset.owner = buyer.companyID;
+        asset.updatedAt = new Date();
+        await ctx.stub.putState(compositeKey, this.toBuffer(asset));
+      }
+
+      shipment.status = "delivered";
+      shipment.updatedAt = new Date();
+
+      await ctx.stub.putState(compositeKey, this.toBuffer(shipment));
+      return shipment;
     } catch (error) {
-      console.log('Cought error.');
-      throw new Error(error);
+      throw new Error(error.message || error);
     }
   }
 
@@ -256,13 +365,29 @@ class ChainCode extends Contract {
    */
   async retailDrug(ctx, drugName, serialNo, retailerCRN, customerAadhar) {
     try {
-      if (ctx.clientIdentity.getMSPID() !== "retailerMSP") console.log("transaction aborted");
-      const drugID = this.createCompositeKey(ctx, [drugName, serialNo]);
-      let dregObject = await ctx.stub.getState(drugID).catch((err) => console.log(err));
-      dregObject.owner = customerAadhar;
+      // if (ctx.clientIdentity.getMSPID() !== "retailerMSP")
+      //   throw new Error('Failed to process request where retailer is not valid/exist.');
+
+      const retailer = await this.getStateByPartialCompositeKey(ctx, retailerCRN);
+
+      if (!retailer)
+        throw new Error('Failed to process request where retailer is not valid/exist.');
+
+      const { compositeKey, asset } = await this.getState(ctx, drugName, serialNo);
+
+      if (!asset)
+        throw new Error('Failed to process request where drug is not valid/exist.');
+
+      if (asset.owner != retailer.companyID)
+        throw new Error('Failed to process request where retaile is not the drug owner.');
+
+      asset.owner = customerAadhar;
+      asset.updatedAt = new Date();
+
+      await ctx.stub.putState(compositeKey, this.toBuffer(asset));
+      return asset;
     } catch (error) {
-      console.log('Cought error.');
-      throw new Error(error);
+      throw new Error(error.message || error);
     }
   }
 
@@ -274,14 +399,30 @@ class ChainCode extends Contract {
    */
   async viewHistory(ctx, drugName, serialNo) {
     try {
-      const drugID = this.createCompositeKey(ctx, [drugName, serialNo]);
+      const compositeKey = await ctx.stub.createCompositeKey(contractNameSpace, [drugName, serialNo]);
 
-      let dregObject = await ctx.stub.getState(drugID).catch((err) => console.log(err));
+      let iterator = await ctx.stub.getHistoryForKey(compositeKey);
+      let res = await iterator.next();
+      let result = [];
 
-      return dregObject;
+      while (true) {
+        if (res.value && res.value.value)
+          result.push(JSON.parse(res.value.value.toString('utf8')));
+
+        if (res.done) {
+          await iterator.close();
+           break;
+         }
+
+        res = await iterator.next();
+      }
+
+      if (!result)
+        throw new Error('Failed to process request where drug is not valid/exist.');
+
+      return result;
     } catch (error) {
-      console.log('Cought error.');
-      throw new Error(error);
+      throw new Error(error.message || error);
     }
   }
 
@@ -293,73 +434,15 @@ class ChainCode extends Contract {
    */
   async viewDrugCurrentState(ctx, drugName, serialNo) {
     try {
-      const drugID = this.createCompositeKey(ctx, [drugName, serialNo]);
-      let dregObject = await ctx.stub.getState(drugID).catch((err) => console.log(err));
-      return dregObject;
-
+      const { asset } = await this.getState(ctx, drugName, serialNo)
+      if (!asset)
+        throw new Error('Failed to process request where drug is not valid/exist.');
+      return asset;
     } catch (error) {
-      console.log('Cought error.');
-      throw new Error(error);
+      throw new Error(error.message || error);
     }
   }
 
-  
-  /**
-   * 
-   * @param {*} ctx 
-   * @param {*} companyCRN 
-   * @param {*} drugName 
-   */
-  // async getOrg(ctx, companyCRN, drugName) {
-  //   try {
-  //     const orgKey = this.createCompositeKey(ctx, [companyCRN, drugName]);
-  //     const existingOrg = await ctx.stub.getState(orgKey)
-  //       .catch(err => { throw new Error('Failed to fetch company. Company doesnt exist', err) });
-  //     return existingOrg;
-  //   } catch (error) {
-  //     console.log('Cought error.');
-  //     throw new Error(error);
-  //   }
-  // }
-
-  
-  /**
-   * 
-   * @param {*} ctx 
-   * @param {*} drugName 
-   * @param {*} serialNo 
-   */
-  // async viewDrugState(ctx, drugName, serialNo) {
-  //   try {
-  //     const drugKey = this.createCompositeKey(ctx, [drugName, serialNo]);
-  //     const existingDrug = await ctx.stub.getState(drugKey)
-  //       .catch(err => { throw new Error('Faild to fetch. Drug doesnt exist') });
-  //     return existingDrug;
-  //   } catch (error) {
-  //     console.log('Cought error.');
-  //     throw new Error(error);
-  //   }
-  // }
-
-  
-  /**
-   * 
-   * @param {*} ctx 
-   * @param {*} buyer 
-   * @param {*} drugName 
-   * @param {*} quantity 
-   */
-  // async viewPurchaseOrderRequest(ctx, buyer, drugName, quantity) {
-  //   try {
-  //     const poKey = this.createCompositeKey(ctx, [drugName, buyer, quantity])
-  //     const existingPo = await ctx.ctx.stub.getState(poKey)
-  //       .catch(err => { throw new Error('Failed to fetch company. Company doesnt exist', err) });
-  //     return existingPo;
-  //   } catch (error) {
-  //     console.log('Cought error.');
-  //     throw new Error(error);
-  //   }
-  // }
-
 }
-module.exports = ChainCode;
+
+module.exports = PharmaNetContract;
