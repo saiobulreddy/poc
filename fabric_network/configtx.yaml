@@ -106,13 +106,11 @@ Organizations:
 
 Capabilities:
   Channel: &ChannelCapabilities
-    V1_4_3: false
-    V1_4_2: true
+    V1_4_3: true
     V1_3: false
     V1_1: false
   Orderer: &OrdererCapabilities
     V1_4_2: true
-    V1_4_3: false
     V1_1: false
   Application: &ApplicationCapabilities
     V1_4_2: true
@@ -178,7 +176,6 @@ Channel: &ChannelDefaults
   Capabilities:
     <<: *ChannelCapabilities
 
-#Profiles
 Profiles:
   OrdererGenesis:
     <<: *ChannelDefaults
