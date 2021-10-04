@@ -21,6 +21,7 @@ services:
 
   ca.manufacturer.pharma-network.com:
     image: hyperledger/fabric-ca:latest
+    # image: hyperledger/fabric-ca:1.5
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca.manufacturer.pharma-network.com
@@ -38,6 +39,7 @@ services:
 
   ca.distributor.pharma-network.com:
     image: hyperledger/fabric-ca:latest
+    # image: hyperledger/fabric-ca:1.5
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca.distributor.pharma-network.com
@@ -55,6 +57,7 @@ services:
 
   ca.retailer.pharma-network.com:
     image: hyperledger/fabric-ca:latest
+    # image: hyperledger/fabric-ca:1.5
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca.retailer.pharma-network.com
@@ -72,6 +75,7 @@ services:
 
   ca.consumer.pharma-network.com:
     image: hyperledger/fabric-ca:latest
+    # image: hyperledger/fabric-ca:1.5
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca.consumer.pharma-network.com
@@ -89,6 +93,7 @@ services:
   
   ca.transporter.pharma-network.com:
     image: hyperledger/fabric-ca:latest
+    # image: hyperledger/fabric-ca:1.5
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca.transporter.pharma-network.com
@@ -240,7 +245,7 @@ services:
 
   chaincode:
     container_name: chaincode
-    image: hyperledger/fabric-ccenv:latest
+    image: hyperledger/fabric-ccenv:2.3
     tty: true
     environment:
       - GOPATH=/opt/gopath
@@ -256,6 +261,7 @@ services:
       - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/crypto/peerOrganizations/manufacturer.pharma-network.com/users/Admin@manufacturer.pharma-network.com/tls/ca.crt
     working_dir: /opt/gopath/src/chaincode
     command: /bin/bash -c 'sleep 6000000'
+    # command: peer node start --peer-chaincodedev=true
     volumes:
       - /var/run/:/host/var/run/
       - ./../chaincode:/opt/gopath/src/chaincode
@@ -263,4 +269,3 @@ services:
       - ./crypto-config:/opt/gopath/src/crypto
     networks:
       - pharma 
-
